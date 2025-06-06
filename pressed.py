@@ -65,4 +65,57 @@ class PressedVisualNovel:
                 "background": "school_gate.png",
                 "choices": [
                     {"text": "Go to class", "next": "homeroom"},
-                    {"text": "Explore campus", "next":
+                    {"text": "Explore campus", "next": "explore"}
+                ]
+            }
+        }
+        
+        # Merge all character scenes
+        for character in self.state.characters.values():
+            scenes.update(character.get_events())
+            
+        return scenes
+
+    def _render_character(self, character_name: str, expression: str = "neutral"):
+        """Draw character sprite with expression"""
+        sprite = self.sprite_manager.sprites[character_name][expression]
+        # Position at right side of screen
+        self.screen.blit(sprite, (800, 100))
+
+    def _handle_event_trigger(self):
+        """Process newly triggered events"""
+        new_events = self.state.check_events()
+        if new_events:
+            self.state.active_event = new_events[0]  # Take first available event
+            # Pause normal progression for event scene
+
+    def run(self):
+        while True:
+            self._handle_event_trigger()
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                    
+            # Clear screen
+            self.screen.fill((0, 0, 0))
+            
+            # Draw background if available
+            current_scene = self.scenes.get(self.state.current_scene, {})
+            if "background" in current_scene:
+                bg = pygame.image.load(f"assets/bg/{current_scene['background']}")
+                self.screen.blit(bg, (0, 0))
+            
+            # Draw active character
+            if self.state.active_event:
+                char_type = self.state.active_event.get("character")
+                if char_type:
+                    self._render_character(char_type, "neutral")
+            
+            pygame.display.flip()
+            self.clock.tick(60)
+
+if __name__ == "__main__":
+    game = PressedVisualNovel()
+    game.run()
