@@ -9,7 +9,7 @@ pygame.display.set_caption("Romance Visual Novel")
 clock = pygame.time.Clock()
 
 # Game state
-class GameState:
+class PressedGameState:
     def __init__(self):
         self.relationships = {
             "Tsundere": {"points": 0, "events_unlocked": []},
