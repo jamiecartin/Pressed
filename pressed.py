@@ -1,75 +1,68 @@
 import pygame
 import sys
+import os
+from typing import Dict, List, Optional
 from characters import get_character_classes
+
+class SpriteManager:
+    def __init__(self):
+        self.sprites = {}
+        
+    def load_sprites(self, character_name: str, expressions: List[str]):
+        """Load all sprites for a character"""
+        self.sprites[character_name] = {}
+        for expr in expressions:
+            path = f"assets/sprites/{character_name.lower()}_{expr}.png"
+            try:
+                self.sprites[character_name][expr] = pygame.image.load(path).convert_alpha()
+            except:
+                # Fallback if sprite missing
+                surf = pygame.Surface((300, 600), pygame.SRCALPHA)
+                surf.fill((255, 0, 255, 128))  # Visible placeholder
+                self.sprites[character_name][expr] = surf
 
 class PressedGameState:
     def __init__(self):
-        self.characters = {
-            name: cls() for name, cls in get_character_classes().items()
-        }
+        self.characters = {name: cls() for name, cls in get_character_classes().items()}
         self.current_scene = "start"
+        self.active_event: Optional[Dict] = None
         
-    def get_character(self, name: str):
-        return self.characters.get(name)
-    
     def check_events(self):
-        """Check all characters for unlocked events"""
-        events = []
+        """Check all characters for new events"""
+        new_events = []
         for char in self.characters.values():
             for event in char.events:
-                if (char.relationship_points >= event.required_points and 
-                    not hasattr(event, 'triggered')):
-                    events.append(event.scene_id)
+                if (char.relationship_points >= event.required_points 
+                    and not event.triggered):
                     event.triggered = True
-        return events
+                    new_events.append(char.get_events()[event.scene_id])
+        return new_events
 
 class PressedVisualNovel:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((800, 600))
+        self.screen = pygame.display.set_mode((1280, 720))
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.Font(None, 36)
+        self.sprite_manager = SpriteManager()
         self.state = PressedGameState()
-        self.load_scenes()
+        self.scenes = self._load_all_scenes()
         
-    def load_scenes(self):
-        """Combine character scenes with shared scenes"""
-        self.scenes = {
+        # Load character sprites
+        self._init_sprites()
+        
+    def _init_sprites(self):
+        """Load sprites for all characters"""
+        expressions = ["neutral", "happy", "angry", "blush"]
+        for char_name in self.state.characters.keys():
+            self.sprite_manager.load_sprites(char_name, expressions)
+
+    def _load_all_scenes(self) -> Dict:
+        """Combine scenes from all characters"""
+        scenes = {
             "start": {
-                "text": "Where do you want to go?",
+                "text": "Welcome to your first day!",
+                "background": "school_gate.png",
                 "choices": [
-                    {"text": "Library", "next": "bookworm_intro"},
-                    {"text": "Sports Field", "next": "athlete_intro"}
-                ]
-            }
-        }
-        
-        # Load character-specific scenes
-        for char in self.state.characters.values():
-            self.scenes.update(char.get_events())
-
-    def run(self):
-        running = True
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-            
-            self.render()
-        
-        pygame.quit()
-        sys.exit()
-
-    def render(self):
-        self.screen.fill((240, 240, 250))
-        # Render current scene
-        scene = self.scenes.get(self.state.current_scene, {})
-        font = pygame.font.SysFont('Arial', 24)
-        
-        if "text" in scene:
-            text = font.render(scene["text"], True, (0, 0, 0))
-            self.screen.blit(text, (50, 50))
-        
-        pygame.display.flip()
-
-if __name__ == "__main__":
-    game = PressedVisualNovel()
-    game.run()
+                    {"text": "Go to class", "next": "homeroom"},
+                    {"text": "Explore campus", "next":
